@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Control de Gastos e Ingresos</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --verde:   #27ae60;
+      --rojo:    #e74c3c;
+      --azul:    #2980b9;
+      --morado:  #8e44ad;
+      --teal:    #16a085;
+      --naranja: #d35400;
+      --bg:      #f0f2f5;
+      --white:   #ffffff;
+      --border:  #eef0f3;
+      --text:    #2c3e50;
+      --muted:   #7f8c8d;
+      --radius:  10px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 12px;
+      font-size: 14px;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    /* ═══ ENCABEZADO ═══ */
+    .header {
+      background: linear-gradient(135deg, #1a3c5e 0%, #2d6a9f 100%);
+      color: white;
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .header h1 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .header h1 small {
+      font-size: 0.8rem;
+      font-weight: 400;
+      opacity: 0.8;
+      display: block;
+      margin-top: 2px;
+    }
+    .header-fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .header-fields .full { grid-column: 1 / -1; }
+    .field-group label {
+      display: block;
+      font-size: 0.7rem;
+      opacity: 0.75;
+      margin-bottom: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .field-group input,
+    .field-group select {
+      width: 100%;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 6px;
+      color: white;
+      padding: 7px 9px;
+      font-size: 0.82rem;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .field-group input::placeholder { color: rgba(255,255,255,0.55); }
+    .field-group select option { background: #1a3c5e; color: white; }
+
+    /* ═══ TARJETAS RESUMEN ═══ */
+    .cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .card {
+      border-radius: var(--radius);
+      padding: 14px 14px 12px;
+      color: white;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.13);
+    }
+    .card-lbl {
+      font-size: 0.67rem;
+      opacity: 0.85;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .card-val {
+      font-size: 1.45rem;
+      font-weight: 700;
+      margin-top: 4px;
+      line-height: 1;
+      word-break: break-all;
+    }
+    .card-sub {
+      font-size: 0.68rem;
+      opacity: 0.8;
+      margin-top: 4px;
+    }
+    .c-ing  { background: linear-gradient(135deg,#27ae60,#1e8449); }
+    .c-gas  { background: linear-gradient(135deg,#e74c3c,#c0392b); }
+    .c-bal  { background: linear-gradient(135deg,#2980b9,#1a5276); }
+    .c-bal.pos { background: linear-gradient(135deg,#27ae60,#1e8449); }
+    .c-bal.neg { background: linear-gradient(135deg,#e74c3c,#c0392b); }
+    .c-mrg  { background: linear-gradient(135deg,#8e44ad,#6c3483); }
+
+    /* ═══ PANEL ═══ */
+    .panel {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 14px;
+      color: white;
+      font-weight: 600;
+      font-size: 0.88rem;
+    }
+    .ph-verde   { background: var(--verde); }
+    .ph-rojo    { background: var(--rojo); }
+    .ph-azul    { background: var(--azul); }
+    .ph-teal    { background: var(--teal); }
+    .ph-naranja { background: var(--naranja); }
+    .ph-morado  { background: var(--morado); }
+
+    .add-btn {
+      background: rgba(255,255,255,0.22);
+      border: 1px solid rgba(255,255,255,0.45);
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 5px 11px;
+      white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .add-btn:active { background: rgba(255,255,255,0.38); }
+
+    /* ═══ TABLA SCROLL ═══ */
+    .tbl-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      min-width: 480px;
+    }
+    thead th {
+      background: #f7f8fa;
+      padding: 7px 10px;
+      text-align: left;
+      font-size: 0.68rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      border-bottom: 2px solid var(--border);
+      white-space: nowrap;
+    }
+    thead th.r { text-align: right; }
+    tbody td {
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:active { background: #f7f8fa; }
+
+    td input, td select {
+      border: 1px solid #dde1e7;
+      border-radius: 5px;
+      padding: 5px 7px;
+      font-size: 0.78rem;
+      width: 100%;
+      background: #fafbfc;
+      color: var(--text);
+      -webkit-appearance: none;
+      appearance: none;
+      min-height: 30px;
+    }
+    td input:focus, td select:focus {
+      outline: none;
+      border-color: var(--azul);
+      background: white;
+    }
+    td input.monto { text-align: right; }
+
+    /* column widths */
+    .cw-fecha  { width: 108px; }
+    .cw-cat    { width: 138px; }
+    .cw-desc   { min-width: 110px; }
+    .cw-monto  { width: 90px; }
+    .cw-met    { width: 106px; }
+    .cw-est    { width: 90px; }
+    .cw-del    { width: 32px; text-align: center; }
+
+    .subtotal-row td {
+      background: #f7f8fa;
+      font-weight: 700;
+      padding: 8px 10px !important;
+      font-size: 0.82rem;
+      border-top: 2px solid var(--border) !important;
+    }
+    .amt { text-align: right; font-weight: 600; }
+    .amt.g { color: var(--verde); }
+    .amt.r { color: var(--rojo); }
+    .amt.t { color: var(--teal); }
+    .amt.o { color: var(--naranja); }
+
+    .del-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #cbd5e0;
+      font-size: 0.95rem;
+      padding: 4px 6px;
+      border-radius: 4px;
+      line-height: 1;
+      display: block;
+      margin: 0 auto;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .del-btn:active { color: var(--rojo); background: #fff0f0; }
+
+    .panel-foot {
+      padding: 8px 12px;
+      background: #f7f8fa;
+      border-top: 1px solid var(--border);
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    /* ═══ RESUMEN CATEGORÍAS ═══ */
+    .cat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    .cat-col { padding: 12px 14px; }
+    .cat-col:first-child { border-right: 1px solid var(--border); }
+    .cat-col-title {
+      font-size: 0.68rem;
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 8px;
+    }
+    .cat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      border-bottom: 1px dashed var(--border);
+      font-size: 0.78rem;
+      gap: 8px;
+    }
+    .cat-row:last-child { border-bottom: none; }
+    .cat-row .cn { color: #555; flex: 1; min-width: 0; }
+    .cat-row .cv { font-weight: 700; white-space: nowrap; }
+    .bar-bg  { background: #eee; border-radius: 3px; height: 3px; width: 100%; margin-top: 3px; }
+    .bar-fill { height: 3px; border-radius: 3px; }
+
+    /* ═══ NOTAS ═══ */
+    .notes {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .notes h3 { font-size: 0.82rem; color: var(--muted); margin-bottom: 8px; font-weight: 600; }
+    .notes textarea {
+      width: 100%;
+      border: 1px solid #dde1e7;
+      border-radius: 6px;
+      padding: 9px;
+      font-size: 0.82rem;
+      color: var(--text);
+      resize: vertical;
+      min-height: 72px;
+      font-family: inherit;
+    }
+
+    /* ═══ BOTONES ACCIÓN ═══ */
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .btn {
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 12px 8px;
+      text-align: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active { opacity: 0.8; transform: scale(0.98); }
+    .btn-print  { background: #2d6a9f; color: white; }
+    .btn-export { background: var(--verde); color: white; }
+    .btn-save   { background: var(--morado); color: white; }
+    .btn-clear  { background: var(--rojo); color: white; }
+
+    /* ═══ PRINT ═══ */
+    @media print {
+      body { background: white; padding: 6px; }
+      .actions, .add-btn, .del-btn { display: none !important; }
+      .panel, .notes { box-shadow: none; border: 1px solid #ddd; }
+      .card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .tbl-wrap { overflow: visible; }
+      table { min-width: 0; }
+    }
+
+    /* ═══ TABLET: dos columnas para paneles ═══ */
+    @media (min-width: 680px) {
+      body { padding: 16px; }
+      .two-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-bottom: 14px;
+      }
+      .two-col .panel { margin-bottom: 0; }
+      .actions { grid-template-columns: repeat(4, 1fr); }
+      .card-val { font-size: 1.65rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ ENCABEZADO ═══ -->
+<div class="header">
+  <h1>
+    Control de Gastos e Ingresos
+    <small id="tipo-label">Bodega / Tienda / Negocio</small>
+  </h1>
+  <div class="header-fields">
+    <div class="field-group full">
+      <label>Nombre del Negocio</label>
+      <input type="text" id="nombre-negocio" placeholder="Mi Negocio">
+    </div>
+    <div class="field-group">
+      <label>Tipo</label>
+      <select id="tipo-negocio" onchange="actualizarTipo()">
+        <option>Bodega</option>
+        <option>Tienda</option>
+        <option>Restaurante</option>
+        <option>Minimarket</option>
+        <option>Otro</option>
+      </select>
+    </div>
+    <div class="field-group">
+      <label>Mes / Año</label>
+      <input type="month" id="periodo">
+    </div>
+    <div class="field-group">
+      <label>Moneda</label>
+      <select id="moneda" onchange="recalcular()">
+        <option value="S/. ">S/. (PEN)</option>
+        <option value="$ ">$ (USD)</option>
+        <option value="$ ">$ (COP)</option>
+        <option value="$ ">$ (MXN)</option>
+        <option value="$ ">$ (ARS)</option>
+        <option value="$ ">$ (CLP)</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TARJETAS ═══ -->
+<div class="cards">
+  <div class="card c-ing">
+    <div class="card-lbl">Ingresos</div>
+    <div class="card-val" id="c-ing">S/. 0.00</div>
+    <div class="card-sub" id="c-ing-s">0 registros</div>
+  </div>
+  <div class="card c-gas">
+    <div class="card-lbl">Gastos</div>
+    <div class="card-val" id="c-gas">S/. 0.00</div>
+    <div class="card-sub" id="c-gas-s">0 registros</div>
+  </div>
+  <div class="card c-bal" id="c-bal-box">
+    <div class="card-lbl">Balance</div>
+    <div class="card-val" id="c-bal">S/. 0.00</div>
+    <div class="card-sub" id="c-bal-s">Sin movimientos</div>
+  </div>
+  <div class="card c-mrg">
+    <div class="card-lbl">Margen</div>
+    <div class="card-val" id="c-mrg">0%</div>
+    <div class="card-sub">Ing - Gas / Ing</div>
+  </div>
+</div>
+
+<!-- ═══ INGRESOS + GASTOS ═══ -->
+<div class="two-col">
+
+  <!-- INGRESOS -->
+  <div class="panel">
+    <div class="panel-head ph-verde">
+      <span>&#x2191; Ingresos</span>
+      <button class="add-btn" onclick="agregarFila('ingresos')">+ Agregar</button>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="cw-fecha">Fecha</th>
+            <th class="cw-cat">Categoría</th>
+            <th class="cw-desc">Descripción</th>
+            <th class="cw-monto r">Monto</th>
+            <th class="cw-met">Método</th>
+            <th class="cw-del"></th>
+          </tr>
+        </thead>
+        <tbody id="body-ingresos"></tbody>
+        <tfoot>
+          <tr class="subtotal-row">
+            <td colspan="3">Subtotal Ingresos</td>
+            <td class="amt g" id="st-ingresos">S/. 0.00</td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div class="panel-foot">Ventas, Delivery, Servicios, Otros ingresos</div>
+  </div>
+
+  <!-- GASTOS -->
+  <div class="panel">
+    <div class="panel-head ph-rojo">
+      <span>&#x2193; Gastos</span>
+      <button class="add-btn" onclick="agregarFila('gastos')">+ Agregar</button>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="cw-fecha">Fecha</th>
+            <th class="cw-cat">Categoría</th>
+            <th class="cw-desc">Descripción</th>
+            <th class="cw-monto r">Monto</th>
+            <th class="cw-met">Método</th>
+            <th class="cw-del"></th>
+          </tr>
+        </thead>
+        <tbody id="body-gastos"></tbody>
+        <tfoot>
+          <tr class="subtotal-row">
+            <td colspan="3">Subtotal Gastos</td>
+            <td class="amt r" id="st-gastos">S/. 0.00</td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div class="panel-foot">Mercadería, Sueldos, Alquiler, Servicios, Insumos</div>
+  </div>
+
+</div>
+
+<!-- ═══ RESUMEN POR CATEGORÍA ═══ -->
+<div class="panel">
+  <div class="panel-head ph-azul">&#x25A6; Resumen por Categoría</div>
+  <div class="cat-grid">
+    <div class="cat-col">
+      <div class="cat-col-title">Ingresos</div>
+      <div id="res-ing-cat"></div>
+    </div>
+    <div class="cat-col">
+      <div class="cat-col-title">Gastos</div>
+      <div id="res-gas-cat"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CUENTAS POR COBRAR + PAGAR ═══ -->
+<div class="two-col">
+
+  <!-- POR COBRAR -->
+  <div class="panel">
+    <div class="panel-head ph-teal">
+      <span>&#x1F4CB; Por Cobrar (Fiados)</span>
+      <button class="add-btn" onclick="agregarFila('cobrar')">+ Agregar</button>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="cw-fecha">Fecha</th>
+            <th class="cw-desc">Cliente</th>
+            <th class="cw-monto r">Monto</th>
+            <th class="cw-est r">Estado</th>
+            <th class="cw-del"></th>
+          </tr>
+        </thead>
+        <tbody id="body-cobrar"></tbody>
+        <tfoot>
+          <tr class="subtotal-row">
+            <td colspan="2">Total pendiente</td>
+            <td class="amt t" id="st-cobrar">S/. 0.00</td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- POR PAGAR -->
+  <div class="panel">
+    <div class="panel-head ph-naranja">
+      <span>&#x1F4CB; Por Pagar (Deudas)</span>
+      <button class="add-btn" onclick="agregarFila('pagar')">+ Agregar</button>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="cw-fecha">Fecha</th>
+            <th class="cw-desc">Proveedor</th>
+            <th class="cw-monto r">Monto</th>
+            <th class="cw-est r">Estado</th>
+            <th class="cw-del"></th>
+          </tr>
+        </thead>
+        <tbody id="body-pagar"></tbody>
+        <tfoot>
+          <tr class="subtotal-row">
+            <td colspan="2">Total pendiente</td>
+            <td class="amt o" id="st-pagar">S/. 0.00</td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ NOTAS ═══ -->
+<div class="notes">
+  <h3>&#x1F4DD; Observaciones del mes</h3>
+  <textarea id="notas" placeholder="Eventos especiales, variaciones, cambios de precios..."></textarea>
+</div>
+
+<!-- ═══ ACCIONES ═══ -->
+<div class="actions">
+  <button class="btn btn-print"  onclick="window.print()">&#x1F5A8; Imprimir</button>
+  <button class="btn btn-export" onclick="exportarCSV()">&#x1F4C4; CSV</button>
+  <button class="btn btn-save"   onclick="guardarLocal()">&#x1F4BE; Guardar</button>
+  <button class="btn btn-clear"  onclick="limpiarTodo()">&#x1F5D1; Limpiar</button>
+</div>
+
+<script>
+  // ─── CONFIG ───────────────────────────────────────────────────
+  const hoy = new Date().toISOString().split('T')[0];
+  document.getElementById('periodo').value = hoy.slice(0, 7);
+
+  const CATS_ING = [
+    'Ventas al contado','Delivery / Envíos','Ventas crédito cobradas',
+    'Servicios','Otros ingresos'
+  ];
+  const CATS_GAS = [
+    'Compra mercadería','Compra insumos','Sueldos / Planilla',
+    'Alquiler local','Servicios básicos','Mantenimiento',
+    'Marketing / Publicidad','Transporte / Flete',
+    'Impuestos / Licencias','Préstamo / Cuota','Otros gastos'
+  ];
+  const METODOS = ['Efectivo','Tarjeta','Transferencia','Crédito'];
+  const ESTADOS = ['Pendiente','Pagado','Parcial'];
+
+  const sym   = () => document.getElementById('moneda').value;
+  const fmt   = v  => sym() + parseFloat(v || 0).toFixed(2);
+  const mkSel = (opts, onChange) => {
+    const s = document.createElement('select');
+    opts.forEach(o => { const opt = document.createElement('option'); opt.textContent = o; s.appendChild(opt); });
+    if (onChange) s.addEventListener('change', onChange);
+    return s;
+  };
+
+  // ─── AGREGAR FILA ─────────────────────────────────────────────
+  function agregarFila(tipo) {
+    const body = document.getElementById('body-' + tipo);
+    const tr   = document.createElement('tr');
+    tr.dataset.id = Date.now();
+
+    const mkDate = () => {
+      const i = document.createElement('input');
+      i.type = 'date'; i.value = hoy;
+      i.addEventListener('change', recalcular);
+      return i;
+    };
+    const mkText = (ph) => {
+      const i = document.createElement('input');
+      i.type = 'text'; i.placeholder = ph;
+      return i;
+    };
+    const mkNum = () => {
+      const i = document.createElement('input');
+      i.type = 'number'; i.className = 'monto';
+      i.min = '0'; i.step = '0.01'; i.placeholder = '0.00';
+      i.addEventListener('input', recalcular);
+      return i;
+    };
+    const mkDel = () => {
+      const b = document.createElement('button');
+      b.className = 'del-btn'; b.innerHTML = '&#x2715;';
+      b.addEventListener('click', () => { tr.remove(); recalcular(); });
+      return b;
+    };
+    const cell = (el, cls) => {
+      const td = document.createElement('td');
+      if (cls) td.className = cls;
+      if (typeof el === 'string') td.textContent = el;
+      else td.appendChild(el);
+      return td;
+    };
+
+    if (tipo === 'ingresos' || tipo === 'gastos') {
+      const cats = tipo === 'ingresos' ? CATS_ING : CATS_GAS;
+      tr.appendChild(cell(mkDate(), 'cw-fecha'));
+      tr.appendChild(cell(mkSel(cats, recalcular), 'cw-cat'));
+      tr.appendChild(cell(mkText('Descripción'), 'cw-desc'));
+      tr.appendChild(cell(mkNum(), 'cw-monto'));
+      tr.appendChild(cell(mkSel(METODOS, null), 'cw-met'));
+      tr.appendChild(cell(mkDel(), 'cw-del'));
+    }
+    if (tipo === 'cobrar' || tipo === 'pagar') {
+      const ph = tipo === 'cobrar' ? 'Nombre cliente' : 'Proveedor / Acreedor';
+      tr.appendChild(cell(mkDate(), 'cw-fecha'));
+      tr.appendChild(cell(mkText(ph), 'cw-desc'));
+      tr.appendChild(cell(mkNum(), 'cw-monto'));
+      const estTd = document.createElement('td');
+      estTd.className = 'cw-est'; estTd.style.textAlign = 'right';
+      estTd.appendChild(mkSel(ESTADOS, null));
+      tr.appendChild(estTd);
+      tr.appendChild(cell(mkDel(), 'cw-del'));
+    }
+
+    body.appendChild(tr);
+    recalcular();
+  }
+
+  // ─── SUMAR ────────────────────────────────────────────────────
+  function sumarBody(bodyId) {
+    let t = 0;
+    document.querySelectorAll(`#${bodyId} tr`).forEach(r => {
+      const i = r.querySelector('input.monto');
+      if (i) t += parseFloat(i.value || 0);
+    });
+    return t;
+  }
+
+  // ─── RESUMEN CATEGORÍAS ───────────────────────────────────────
+  function catMap(bodyId) {
+    const m = {};
+    document.querySelectorAll(`#${bodyId} tr`).forEach(r => {
+      const s = r.querySelector('select');
+      const i = r.querySelector('input.monto');
+      if (!s || !i) return;
+      m[s.value] = (m[s.value] || 0) + parseFloat(i.value || 0);
+    });
+    return m;
+  }
+  function renderCat(containerId, map, color) {
+    const el = document.getElementById(containerId);
+    const entries = Object.entries(map).filter(([,v]) => v > 0).sort((a,b) => b[1]-a[1]);
+    if (!entries.length) {
+      el.innerHTML = '<p style="color:#bbb;font-size:0.75rem;padding:6px 0">Sin registros</p>';
+      return;
+    }
+    const max = Math.max(...entries.map(([,v]) => v));
+    el.innerHTML = entries.map(([cat, val]) => {
+      const pct = max > 0 ? (val / max * 100).toFixed(0) : 0;
+      return `<div class="cat-row">
+        <div class="cn">
+          <div>${cat}</div>
+          <div class="bar-bg"><div class="bar-fill" style="background:${color};width:${pct}%"></div></div>
+        </div>
+        <div class="cv" style="color:${color}">${fmt(val)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ─── RECALCULAR ───────────────────────────────────────────────
+  function recalcular() {
+    const ing = sumarBody('body-ingresos');
+    const gas = sumarBody('body-gastos');
+    const cob = sumarBody('body-cobrar');
+    const pag = sumarBody('body-pagar');
+    const bal = ing - gas;
+    const mrg = ing > 0 ? ((bal / ing) * 100).toFixed(1) : 0;
+    const nIng = document.querySelectorAll('#body-ingresos tr').length;
+    const nGas = document.querySelectorAll('#body-gastos tr').length;
+
+    document.getElementById('st-ingresos').textContent = fmt(ing);
+    document.getElementById('st-gastos').textContent   = fmt(gas);
+    document.getElementById('st-cobrar').textContent   = fmt(cob);
+    document.getElementById('st-pagar').textContent    = fmt(pag);
+    document.getElementById('c-ing').textContent       = fmt(ing);
+    document.getElementById('c-ing-s').textContent     = nIng + ' registro(s)';
+    document.getElementById('c-gas').textContent       = fmt(gas);
+    document.getElementById('c-gas-s').textContent     = nGas + ' registro(s)';
+    document.getElementById('c-bal').textContent       = fmt(bal);
+    document.getElementById('c-mrg').textContent       = mrg + '%';
+
+    const bb = document.getElementById('c-bal-box');
+    bb.className = 'card c-bal ' + (bal > 0 ? 'pos' : bal < 0 ? 'neg' : '');
+    document.getElementById('c-bal-s').textContent =
+      bal > 0 ? 'Ganancia del mes' : bal < 0 ? 'Pérdida del mes' : 'Sin movimientos';
+
+    renderCat('res-ing-cat', catMap('body-ingresos'), '#27ae60');
+    renderCat('res-gas-cat', catMap('body-gastos'),   '#e74c3c');
+  }
+
+  function actualizarTipo() {
+    document.getElementById('tipo-label').textContent =
+      document.getElementById('tipo-negocio').value;
+  }
+
+  // ─── GUARDAR / CARGAR ─────────────────────────────────────────
+  function recopilar() {
+    const rows = bodyId => {
+      const out = [];
+      document.querySelectorAll(`#${bodyId} tr`).forEach(r => {
+        out.push({
+          inputs:  [...r.querySelectorAll('input')].map(i  => i.value),
+          selects: [...r.querySelectorAll('select')].map(s => s.value)
+        });
+      });
+      return out;
+    };
+    return {
+      negocio: document.getElementById('nombre-negocio').value,
+      tipo:    document.getElementById('tipo-negocio').value,
+      periodo: document.getElementById('periodo').value,
+      moneda:  document.getElementById('moneda').value,
+      notas:   document.getElementById('notas').value,
+      ingresos: rows('body-ingresos'),
+      gastos:   rows('body-gastos'),
+      cobrar:   rows('body-cobrar'),
+      pagar:    rows('body-pagar'),
+    };
+  }
+
+  function guardarLocal() {
+    localStorage.setItem('cgi-v2', JSON.stringify(recopilar()));
+    alert('✓ Datos guardados en el navegador.');
+  }
+
+  function restaurarFilas(data, bodyId, tipo) {
+    data.forEach(f => {
+      agregarFila(tipo);
+      const row = document.querySelector(`#${bodyId} tr:last-child`);
+      const inps = row.querySelectorAll('input');
+      const sels = row.querySelectorAll('select');
+      f.inputs.forEach((v, i)  => { if (inps[i])  inps[i].value  = v; });
+      f.selects.forEach((v, i) => { if (sels[i]) sels[i].value = v; });
+    });
+  }
+
+  function cargarLocal() {
+    const raw = localStorage.getItem('cgi-v2');
+    if (!raw) return false;
+    try {
+      const d = JSON.parse(raw);
+      document.getElementById('nombre-negocio').value = d.negocio || '';
+      document.getElementById('tipo-negocio').value   = d.tipo    || 'Bodega';
+      document.getElementById('periodo').value         = d.periodo || '';
+      document.getElementById('moneda').value          = d.moneda  || 'S/. ';
+      document.getElementById('notas').value           = d.notas   || '';
+      actualizarTipo();
+      ['body-ingresos','body-gastos','body-cobrar','body-pagar'].forEach(id => {
+        document.getElementById(id).innerHTML = '';
+      });
+      restaurarFilas(d.ingresos || [], 'body-ingresos', 'ingresos');
+      restaurarFilas(d.gastos   || [], 'body-gastos',   'gastos');
+      restaurarFilas(d.cobrar   || [], 'body-cobrar',   'cobrar');
+      restaurarFilas(d.pagar    || [], 'body-pagar',    'pagar');
+      recalcular();
+      return true;
+    } catch(e) { return false; }
+  }
+
+  // ─── EXPORTAR CSV ─────────────────────────────────────────────
+  function exportarCSV() {
+    const d = recopilar();
+    let csv = `CONTROL DE GASTOS E INGRESOS\nNegocio:,${d.negocio}\nPeriodo:,${d.periodo}\n\n`;
+    csv += 'INGRESOS\nFecha,Categoría,Descripción,Monto,Método\n';
+    d.ingresos.forEach(f => {
+      const [fecha,,desc,monto] = f.inputs;
+      const [cat,,met] = f.selects;
+      csv += `"${fecha}","${cat}","${desc}","${monto}","${met || ''}"\n`;
+    });
+    csv += '\nGASTOS\nFecha,Categoría,Descripción,Monto,Método\n';
+    d.gastos.forEach(f => {
+      const [fecha,,desc,monto] = f.inputs;
+      const [cat,,met] = f.selects;
+      csv += `"${fecha}","${cat}","${desc}","${monto}","${met || ''}"\n`;
+    });
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `control-${d.negocio || 'negocio'}-${d.periodo}.csv`;
+    a.click();
+  }
+
+  // ─── LIMPIAR ──────────────────────────────────────────────────
+  function limpiarTodo() {
+    if (!confirm('¿Borrar todos los datos ingresados?')) return;
+    ['body-ingresos','body-gastos','body-cobrar','body-pagar'].forEach(id => {
+      document.getElementById(id).innerHTML = '';
+    });
+    document.getElementById('notas').value = '';
+    recalcular();
+  }
+
+  // ─── DATOS DE EJEMPLO ─────────────────────────────────────────
+  function cargarEjemplos() {
+    const mes = hoy.slice(0, 8);
+    const poblar = (bodyId, tipo, datos) => {
+      datos.forEach(d => {
+        agregarFila(tipo);
+        const row = document.querySelector(`#${bodyId} tr:last-child`);
+        const inps = row.querySelectorAll('input');
+        const sels = row.querySelectorAll('select');
+        inps[0].value = d[0]; // fecha
+        sels[0].value = d[1]; // cat
+        inps[1].value = d[2]; // desc
+        inps[2].value = d[3]; // monto
+        if (sels[1]) sels[1].value = d[4]; // método
+      });
+    };
+    poblar('body-ingresos', 'ingresos', [
+      [mes+'01','Ventas al contado','Ventas del día','850.00','Efectivo'],
+      [mes+'02','Delivery / Envíos','Pedido online','120.50','Transferencia'],
+    ]);
+    poblar('body-gastos', 'gastos', [
+      [mes+'01','Compra mercadería','Proveedor ABC','400.00','Efectivo'],
+      [mes+'01','Servicios básicos','Luz y agua','85.00','Efectivo'],
+      [mes+'02','Sueldos / Planilla','Empleado mes','650.00','Transferencia'],
+    ]);
+    recalcular();
+  }
+
+  // ─── INIT ─────────────────────────────────────────────────────
+  window.addEventListener('load', () => {
+    if (!cargarLocal()) cargarEjemplos();
+  });
+</script>
+</body>
+</html>
