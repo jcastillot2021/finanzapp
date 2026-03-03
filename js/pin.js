@@ -9,7 +9,12 @@ const PIN = {
 
   init(hasPin, onSuccess) {
     this._onSuccess = onSuccess;
-    if (!hasPin) { onSuccess(); return; }
+    if (!hasPin) {
+      document.getElementById('pin-screen').style.display = 'none';
+      document.getElementById('app').classList.remove('hidden');
+      onSuccess();
+      return;
+    }
 
     this._input = '';
     document.getElementById('pin-screen').style.display = 'flex';
