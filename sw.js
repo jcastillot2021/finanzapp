@@ -1,19 +1,19 @@
 // FinanzApp Service Worker
 const CACHE_NAME = 'finanzapp-v1.0.0';
 
+const BASE = '/finanzapp';
+
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/css/styles.css',
-  '/js/db.js',
-  '/js/app.js',
-  '/js/charts.js',
-  '/js/export.js',
-  '/js/pin.js',
-  '/icons/icon.svg',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  BASE + '/',
+  BASE + '/index.html',
+  BASE + '/manifest.json',
+  BASE + '/css/styles.css',
+  BASE + '/js/db.js',
+  BASE + '/js/app.js',
+  BASE + '/js/charts.js',
+  BASE + '/js/export.js',
+  BASE + '/js/pin.js',
+  BASE + '/icons/icon.svg',
 ];
 
 // Install: cache all static assets
@@ -78,7 +78,7 @@ self.addEventListener('fetch', (event) => {
       }).catch(() => {
         // Offline fallback: return index.html for navigation
         if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
+          return caches.match(BASE + '/index.html');
         }
         return new Response('Offline', { status: 503 });
       });
