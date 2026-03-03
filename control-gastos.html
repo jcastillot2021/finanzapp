@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Control de Gastos e Ingresos</title>
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#1a3c5e">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -554,12 +556,11 @@
   function cargarEjemplos(){const poblar=(bodyId,tipo,datos)=>{datos.forEach(d=>{agregarFila(tipo);const row=document.querySelector(`#${bodyId} tr:last-child`),inps=row.querySelectorAll('input'),sels=row.querySelectorAll('select');inps[0].value=d[0];sels[0].value=d[1];inps[1].value=d[2];inps[2].value=d[3];sels[1].value=d[4];});};poblar('body-ingresos','ingresos',ejemplosIng);poblar('body-gastos','gastos',ejemplosGas);recalcular();}
   let _saveTimer=null;
   function autoGuardar(){clearTimeout(_saveTimer);_saveTimer=setTimeout(()=>{localStorage.setItem('cgi-data',JSON.stringify(recopilarDatos()));const m=document.getElementById('autosave-msg');if(m){m.style.opacity='1';setTimeout(()=>{m.style.opacity='0';},2000);}},800);}
-  (function(){const icon=`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='80' fill='%231a3c5e'/><rect x='72' y='290' width='88' height='150' rx='8' fill='%2327ae60'/><rect x='212' y='190' width='88' height='250' rx='8' fill='%232980b9'/><rect x='352' y='110' width='88' height='330' rx='8' fill='%238e44ad'/><rect x='52' y='446' width='408' height='14' rx='7' fill='white'/></svg>`;const manifest={name:'Control de Gastos e Ingresos',short_name:'Control CGI',description:'Control de gastos e ingresos para bodegas, tiendas y restaurantes',start_url:location.href,display:'standalone',background_color:'#f0f2f5',theme_color:'#1a3c5e',icons:[{src:'data:image/svg+xml,'+icon,sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'}]};const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});const link=document.createElement('link');link.rel='manifest';link.href=URL.createObjectURL(blob);document.head.appendChild(link);})();
   let _installPrompt=null;
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();_installPrompt=e;document.getElementById('btn-install').style.display='inline-block';});
   window.addEventListener('appinstalled',()=>{document.getElementById('btn-install').style.display='none';_installPrompt=null;});
   async function instalarApp(){if(!_installPrompt)return;_installPrompt.prompt();const{outcome}=await _installPrompt.userChoice;if(outcome==='accepted'){document.getElementById('btn-install').style.display='none';_installPrompt=null;}}
-  if('serviceWorker'in navigator&&location.protocol==='https:'){const swCode=`const CACHE='cgi-v1';self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.add(self.location.href)));});self.addEventListener('activate',e=>{e.waitUntil(clients.claim());});self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode],{type:'application/javascript'}))).catch(()=>{});}
+  if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(()=>{});}
   const TUT_STEPS=[
     {title:'¡Bienvenido! 👋',text:'Te guiaré paso a paso para controlar las finanzas de tu negocio. Toca <b>Siguiente</b> para comenzar.',sel:null},
     {title:'1. Configura tu negocio',text:'Ingresa el <b>nombre</b> de tu negocio, el <b>tipo</b> (bodega, tienda…), el <b>mes</b> que quieres controlar y la <b>moneda</b> que usas.',sel:'.header-info'},
