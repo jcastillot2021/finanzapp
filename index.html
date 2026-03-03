@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#070711" id="meta-theme-color">
+  <meta name="description" content="Tu gestión de finanzas personales">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FinanzApp">
+  <title>FinanzApp</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="dark">
+
+  <!-- ===== PIN SCREEN ===== -->
+  <div id="pin-screen" class="pin-screen">
+    <div class="pin-container">
+      <div class="pin-logo">
+        <img src="icons/icon.svg" alt="FinanzApp" width="64" height="64">
+      </div>
+      <h2 class="pin-title">FinanzApp</h2>
+      <p class="pin-subtitle" id="pin-subtitle">Ingresa tu PIN</p>
+      <div class="pin-dots" id="pin-dots">
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+      </div>
+      <p class="pin-error" id="pin-error"></p>
+      <div class="pin-keypad">
+        <button class="pin-key" data-key="1"><span>1</span></button>
+        <button class="pin-key" data-key="2"><span>2</span><small>ABC</small></button>
+        <button class="pin-key" data-key="3"><span>3</span><small>DEF</small></button>
+        <button class="pin-key" data-key="4"><span>4</span><small>GHI</small></button>
+        <button class="pin-key" data-key="5"><span>5</span><small>JKL</small></button>
+        <button class="pin-key" data-key="6"><span>6</span><small>MNO</small></button>
+        <button class="pin-key" data-key="7"><span>7</span><small>PQRS</small></button>
+        <button class="pin-key" data-key="8"><span>8</span><small>TUV</small></button>
+        <button class="pin-key" data-key="9"><span>9</span><small>WXYZ</small></button>
+        <div class="pin-key-empty"></div>
+        <button class="pin-key" data-key="0"><span>0</span></button>
+        <button class="pin-key pin-key-delete" id="pin-delete">⌫</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MAIN APP ===== -->
+  <div id="app" class="app hidden">
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+      <!-- ── HOME / DASHBOARD ── -->
+      <section id="view-home" class="view active">
+        <div class="view-header safe-top">
+          <div>
+            <p class="greeting" id="greeting">Hola 👋</p>
+            <h1 class="view-title">Dashboard</h1>
+          </div>
+          <div class="header-actions">
+            <button class="icon-btn" id="theme-toggle" aria-label="Cambiar tema">
+              <span id="theme-icon">☀️</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Balance Card -->
+        <div class="balance-card">
+          <div class="balance-card-top">
+            <span class="balance-label">Balance del mes</span>
+            <span class="balance-period" id="balance-period">—</span>
+          </div>
+          <div class="balance-amount" id="balance-amount">$0.00</div>
+          <div class="balance-row">
+            <div class="balance-stat">
+              <span class="bstat-icon income-icon">↑</span>
+              <div>
+                <span class="bstat-label">Ingresos</span>
+                <span class="bstat-value income-color" id="total-income">$0.00</span>
+              </div>
+            </div>
+            <div class="balance-divider"></div>
+            <div class="balance-stat">
+              <span class="bstat-icon expense-icon">↓</span>
+              <div>
+                <span class="bstat-label">Gastos</span>
+                <span class="bstat-value expense-color" id="total-expense">$0.00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Savings Goal -->
+        <div class="savings-card" id="savings-card" style="display:none">
+          <div class="savings-header">
+            <div>
+              <span class="savings-title">🎯 Meta de Ahorro</span>
+              <span class="savings-sub">Progreso mensual</span>
+            </div>
+            <span class="savings-percent" id="savings-percent">0%</span>
+          </div>
+          <div class="savings-bar-wrap">
+            <div class="savings-bar">
+              <div class="savings-progress" id="savings-progress"></div>
+            </div>
+          </div>
+          <div class="savings-amounts">
+            <span id="savings-current">$0</span>
+            <span id="savings-goal-display">$0</span>
+          </div>
+        </div>
+
+        <!-- Chart Card -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Distribución</h3>
+            <div class="pill-toggle">
+              <button class="pill-btn active" data-chart="donut">Categorías</button>
+              <button class="pill-btn" data-chart="bar">Mensual</button>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="main-chart"></canvas>
+          </div>
+          <div class="chart-legend" id="chart-legend"></div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Recientes</h3>
+            <button class="link-btn" id="see-all-btn">Ver todo →</button>
+          </div>
+          <div id="recent-transactions">
+            <div class="empty-state">
+              <span class="empty-icon">📊</span>
+              <p>Sin movimientos aún</p>
+              <p class="empty-sub">Toca + para agregar uno</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:100px"></div>
+      </section>
+
+      <!-- ── TRANSACTIONS ── -->
+      <section id="view-transactions" class="view">
+        <div class="view-header safe-top">
+          <h1 class="view-title">Movimientos</h1>
+          <button class="icon-btn" id="search-toggle" aria-label="Buscar">🔍</button>
+        </div>
+
+        <div class="search-bar hidden" id="search-bar">
+          <input type="search" class="search-input" id="search-input" placeholder="Buscar movimiento...">
+        </div>
+
+        <div class="filters-bar">
+          <div class="month-nav">
+            <button class="icon-btn small" id="prev-month">‹</button>
+            <span class="month-label" id="filter-month-label">Este mes</span>
+            <button class="icon-btn small" id="next-month">›</button>
+          </div>
+          <div class="type-chips">
+            <button class="chip active" data-type="all">Todos</button>
+            <button class="chip" data-type="income">Ingresos</button>
+            <button class="chip" data-type="expense">Gastos</button>
+          </div>
+        </div>
+
+        <div class="summary-strip">
+          <div class="strip-item">
+            <span class="strip-label">Ingresos</span>
+            <span class="strip-value income-color" id="filter-income">$0</span>
+          </div>
+          <div class="strip-sep"></div>
+          <div class="strip-item">
+            <span class="strip-label">Gastos</span>
+            <span class="strip-value expense-color" id="filter-expense">$0</span>
+          </div>
+          <div class="strip-sep"></div>
+          <div class="strip-item">
+            <span class="strip-label">Balance</span>
+            <span class="strip-value" id="filter-balance">$0</span>
+          </div>
+        </div>
+
+        <div id="all-transactions">
+          <div class="empty-state">
+            <span class="empty-icon">📋</span>
+            <p>No hay movimientos</p>
+          </div>
+        </div>
+
+        <div style="height:100px"></div>
+      </section>
+
+      <!-- ── STATS ── -->
+      <section id="view-stats" class="view">
+        <div class="view-header safe-top">
+          <h1 class="view-title">Estadísticas</h1>
+          <select id="stats-period" class="select-mini">
+            <option value="this-month">Este mes</option>
+            <option value="last-month">Mes anterior</option>
+            <option value="last-3">3 meses</option>
+            <option value="last-6">6 meses</option>
+            <option value="this-year">Este año</option>
+          </select>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-tile income-tile">
+            <span class="stat-tile-icon">💰</span>
+            <span class="stat-tile-val" id="stats-income">$0</span>
+            <span class="stat-tile-lbl">Ingresos</span>
+          </div>
+          <div class="stat-tile expense-tile">
+            <span class="stat-tile-icon">💸</span>
+            <span class="stat-tile-val" id="stats-expense">$0</span>
+            <span class="stat-tile-lbl">Gastos</span>
+          </div>
+          <div class="stat-tile savings-tile">
+            <span class="stat-tile-icon">🏦</span>
+            <span class="stat-tile-val" id="stats-savings">$0</span>
+            <span class="stat-tile-lbl">Ahorros</span>
+          </div>
+          <div class="stat-tile count-tile">
+            <span class="stat-tile-icon">📊</span>
+            <span class="stat-tile-val" id="stats-count">0</span>
+            <span class="stat-tile-lbl">Movimientos</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Comparativa Mensual</h3>
+          </div>
+          <div class="chart-wrap bar-wrap">
+            <canvas id="bar-chart"></canvas>
+          </div>
+          <div class="bar-legend">
+            <span class="legend-dot" style="background:#10b981"></span> Ingresos &nbsp;
+            <span class="legend-dot" style="background:#f43f5e"></span> Gastos
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Por Categoría</h3>
+            <div class="pill-toggle">
+              <button class="pill-btn active" data-cat-type="expense">Gastos</button>
+              <button class="pill-btn" data-cat-type="income">Ingresos</button>
+            </div>
+          </div>
+          <div class="chart-wrap donut-wrap">
+            <canvas id="pie-chart"></canvas>
+          </div>
+          <div class="chart-legend" id="stats-legend"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Top Categorías</h3>
+          </div>
+          <div id="top-categories"></div>
+        </div>
+
+        <div style="height:100px"></div>
+      </section>
+
+      <!-- ── SETTINGS ── -->
+      <section id="view-settings" class="view">
+        <div class="view-header safe-top">
+          <h1 class="view-title">Configuración</h1>
+        </div>
+
+        <div class="card settings-card">
+          <div class="settings-group-title">Perfil</div>
+          <div class="settings-row">
+            <label class="settings-label">Nombre</label>
+            <input type="text" class="settings-input" id="user-name" placeholder="Tu nombre">
+          </div>
+          <div class="settings-row">
+            <label class="settings-label">Moneda</label>
+            <select class="settings-input" id="currency-select">
+              <option value="$">$ Dólar (USD)</option>
+              <option value="S/">S/ Sol (PEN)</option>
+              <option value="€">€ Euro (EUR)</option>
+              <option value="£">£ Libra (GBP)</option>
+              <option value="COP$">COP$ Peso Colombiano</option>
+              <option value="MXN$">MXN$ Peso Mexicano</option>
+              <option value="ARS$">ARS$ Peso Argentino</option>
+              <option value="CLP$">CLP$ Peso Chileno</option>
+              <option value="Bs">Bs Bolívar (VES)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card settings-card">
+          <div class="settings-group-title">Apariencia</div>
+          <div class="settings-row">
+            <div>
+              <span class="settings-label">Modo Oscuro</span>
+              <p class="settings-hint">Interfaz oscura para tus ojos</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="dark-mode-toggle" checked>
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="card settings-card">
+          <div class="settings-group-title">Meta de Ahorro</div>
+          <div class="settings-row">
+            <label class="settings-label">Meta mensual</label>
+            <input type="number" class="settings-input" id="savings-goal-input" placeholder="0.00" min="0" step="0.01">
+          </div>
+          <button class="btn btn-primary w-full mt-8" id="save-goal-btn">Guardar Meta</button>
+        </div>
+
+        <div class="card settings-card">
+          <div class="settings-group-title">Seguridad</div>
+          <div class="settings-row">
+            <div>
+              <span class="settings-label">PIN de Acceso</span>
+              <p class="settings-hint" id="pin-status">No configurado</p>
+            </div>
+            <button class="btn btn-outline btn-sm" id="pin-setup-btn">Configurar</button>
+          </div>
+        </div>
+
+        <div class="card settings-card">
+          <div class="settings-group-title">Categorías</div>
+          <button class="btn btn-outline w-full" id="manage-categories-btn">⚙️ Administrar Categorías</button>
+        </div>
+
+        <div class="card settings-card">
+          <div class="settings-group-title">Exportar / Importar</div>
+          <div class="export-grid">
+            <button class="export-tile" id="export-csv">
+              <span class="export-icon">📄</span>
+              <span>CSV</span>
+            </button>
+            <button class="export-tile" id="export-excel">
+              <span class="export-icon">📊</span>
+              <span>Excel</span>
+            </button>
+            <button class="export-tile" id="export-json">
+              <span class="export-icon">💾</span>
+              <span>Backup</span>
+            </button>
+            <button class="export-tile" id="import-json">
+              <span class="export-icon">📥</span>
+              <span>Importar</span>
+            </button>
+          </div>
+          <input type="file" id="import-file" accept=".json" style="display:none">
+        </div>
+
+        <div class="card settings-card danger-card">
+          <div class="settings-group-title danger-title">Zona de Peligro</div>
+          <button class="btn btn-danger w-full" id="clear-data-btn">🗑 Eliminar todos los datos</button>
+        </div>
+
+        <p class="app-version">FinanzApp v1.0.0 · Almacenamiento local</p>
+        <div style="height:100px"></div>
+      </section>
+
+    </main><!-- /.main-content -->
+
+    <!-- ===== BOTTOM NAV ===== -->
+    <nav class="bottom-nav safe-bottom">
+      <button class="nav-btn active" data-view="home">
+        <span class="nav-ico">🏠</span>
+        <span class="nav-lbl">Inicio</span>
+      </button>
+      <button class="nav-btn" data-view="transactions">
+        <span class="nav-ico">📋</span>
+        <span class="nav-lbl">Movimientos</span>
+      </button>
+      <div class="nav-fab-slot"></div>
+      <button class="nav-btn" data-view="stats">
+        <span class="nav-ico">📈</span>
+        <span class="nav-lbl">Estadísticas</span>
+      </button>
+      <button class="nav-btn" data-view="settings">
+        <span class="nav-ico">⚙️</span>
+        <span class="nav-lbl">Ajustes</span>
+      </button>
+    </nav>
+
+    <!-- FAB -->
+    <button class="fab" id="fab-add" aria-label="Agregar movimiento">
+      <span class="fab-icon">+</span>
+    </button>
+
+  </div><!-- /#app -->
+
+  <!-- ===== MODAL: ADD/EDIT TRANSACTION ===== -->
+  <div id="modal-transaction" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-sheet">
+      <div class="modal-drag-handle"></div>
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-tx-title">Nuevo Movimiento</h2>
+        <button class="icon-btn" id="modal-tx-close" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="type-toggle">
+        <button class="type-btn expense-btn active" data-type="expense">↓ Gasto</button>
+        <button class="type-btn income-btn" data-type="income">↑ Ingreso</button>
+      </div>
+
+      <div class="amount-container">
+        <span class="amount-symbol" id="amount-symbol">$</span>
+        <input type="number" class="amount-field" id="amount-input"
+               placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Categoría</label>
+        <div class="cat-scroller" id="category-selector"></div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Fecha</label>
+          <input type="date" class="form-input" id="date-input">
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Descripción <span class="optional">(opcional)</span></label>
+        <input type="text" class="form-input" id="desc-input" placeholder="Ej: Supermercado, Netflix...">
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-danger btn-sm hidden" id="delete-tx-btn">Eliminar</button>
+        <button class="btn btn-primary flex-1" id="save-tx-btn">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: CATEGORIES ===== -->
+  <div id="modal-categories" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-sheet">
+      <div class="modal-drag-handle"></div>
+      <div class="modal-header">
+        <h2 class="modal-title">Categorías</h2>
+        <button class="icon-btn" id="cat-modal-close" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="tab-row">
+        <button class="tab-btn active" data-cat-tab="expense">Gastos</button>
+        <button class="tab-btn" data-cat-tab="income">Ingresos</button>
+      </div>
+
+      <div class="cat-grid" id="categories-grid"></div>
+
+      <div class="form-field">
+        <label class="form-label">Nueva Categoría</label>
+        <div class="new-cat-row">
+          <input type="text" class="form-input emoji-input" id="new-cat-emoji" placeholder="🏷" maxlength="2">
+          <input type="text" class="form-input flex-1" id="new-cat-name" placeholder="Nombre de categoría">
+          <button class="btn btn-primary btn-sm" id="add-cat-btn">+</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: PIN SETUP ===== -->
+  <div id="modal-pin-setup" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-sheet pin-setup-sheet">
+      <div class="modal-drag-handle"></div>
+      <div class="modal-header">
+        <h2 class="modal-title" id="pin-setup-title">Configurar PIN</h2>
+        <button class="icon-btn" id="pin-setup-close" aria-label="Cerrar">✕</button>
+      </div>
+      <p class="pin-setup-desc" id="pin-setup-desc">Ingresa un PIN de 4 dígitos</p>
+      <div class="pin-dots" id="pin-setup-dots">
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+      </div>
+      <div class="pin-keypad">
+        <button class="pin-key" data-skey="1"><span>1</span></button>
+        <button class="pin-key" data-skey="2"><span>2</span><small>ABC</small></button>
+        <button class="pin-key" data-skey="3"><span>3</span><small>DEF</small></button>
+        <button class="pin-key" data-skey="4"><span>4</span><small>GHI</small></button>
+        <button class="pin-key" data-skey="5"><span>5</span><small>JKL</small></button>
+        <button class="pin-key" data-skey="6"><span>6</span><small>MNO</small></button>
+        <button class="pin-key" data-skey="7"><span>7</span><small>PQRS</small></button>
+        <button class="pin-key" data-skey="8"><span>8</span><small>TUV</small></button>
+        <button class="pin-key" data-skey="9"><span>9</span><small>WXYZ</small></button>
+        <div class="pin-key-empty"></div>
+        <button class="pin-key" data-skey="0"><span>0</span></button>
+        <button class="pin-key pin-key-delete" id="pin-setup-del">⌫</button>
+      </div>
+      <button class="btn btn-danger w-full mt-8 hidden" id="remove-pin-btn">Eliminar PIN</button>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- Scripts -->
+  <script src="js/db.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/export.js"></script>
+  <script src="js/pin.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
