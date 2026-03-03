@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#4c1d9a"/>
+      <stop offset="50%"  stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"  stop-color="rgba(255,255,255,0.25)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.08)"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="110" fill="url(#bg)"/>
+
+  <!-- Decorative circles -->
+  <circle cx="420" cy="90"  r="120" fill="rgba(255,255,255,0.06)"/>
+  <circle cx="80"  cy="440" r="140" fill="rgba(255,255,255,0.04)"/>
+
+  <!-- Card shape -->
+  <rect x="76" y="140" width="360" height="232" rx="28" fill="url(#card)" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+
+  <!-- Card chip -->
+  <rect x="108" y="172" width="56" height="44" rx="8" fill="rgba(255,220,80,0.85)"/>
+  <line x1="108" y1="190" x2="164" y2="190" stroke="rgba(180,140,0,0.5)" stroke-width="2"/>
+  <line x1="108" y1="200" x2="164" y2="200" stroke="rgba(180,140,0,0.5)" stroke-width="2"/>
+  <line x1="136" y1="172" x2="136" y2="216" stroke="rgba(180,140,0,0.5)" stroke-width="2"/>
+
+  <!-- Contactless icon -->
+  <path d="M196 185 Q210 194 210 203 Q210 212 196 221" stroke="rgba(255,255,255,0.7)" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M210 178 Q232 194 232 203 Q232 212 210 228" stroke="rgba(255,255,255,0.5)" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- Card number dots -->
+  <circle cx="112" cy="268" r="6" fill="rgba(255,255,255,0.7)"/>
+  <circle cx="130" cy="268" r="6" fill="rgba(255,255,255,0.7)"/>
+  <circle cx="148" cy="268" r="6" fill="rgba(255,255,255,0.7)"/>
+  <circle cx="166" cy="268" r="6" fill="rgba(255,255,255,0.7)"/>
+
+  <circle cx="208" cy="268" r="6" fill="rgba(255,255,255,0.7)"/>
+  <circle cx="226" cy="268" r="6" fill="rgba(255,255,255,0.7)"/>
+  <circle cx="244" cy="268" r="6" fill="rgba(255,255,255,0.7)"/>
+  <circle cx="262" cy="268" r="6" fill="rgba(255,255,255,0.7)"/>
+
+  <!-- Last 4 digits (visible) -->
+  <text x="298" y="276" font-family="monospace" font-size="22" font-weight="700" fill="rgba(255,255,255,0.9)">3287</text>
+
+  <!-- Card holder name -->
+  <text x="108" y="324" font-family="sans-serif" font-size="16" fill="rgba(255,255,255,0.9)" font-weight="600" letter-spacing="1">FINANZAPP</text>
+
+  <!-- Up/Down arrows (income/expense indicator) -->
+  <g transform="translate(320, 310)">
+    <!-- Income up arrow -->
+    <circle cx="0" cy="0" r="22" fill="rgba(16,185,129,0.25)"/>
+    <path d="M0 -10 L8 2 L3 2 L3 10 L-3 10 L-3 2 L-8 2 Z" fill="#10b981"/>
+    <!-- Expense down arrow -->
+    <circle cx="54" cy="0" r="22" fill="rgba(244,63,94,0.25)"/>
+    <path d="M54 10 L62 -2 L57 -2 L57 -10 L51 -10 L51 -2 L46 -2 Z" fill="#f43f5e"/>
+  </g>
+</svg>
