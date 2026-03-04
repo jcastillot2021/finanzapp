@@ -345,6 +345,27 @@
       50%       { outline-color: #74b9ff; }
     }
     .btn-help { background: #f39c12; color: white; }
+    /* ─── SCANNER MODAL ─── */
+    .scan-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2000;display:flex;align-items:center;justify-content:center;}
+    .scan-card{background:#fff;border-radius:16px;padding:28px 24px;width:92%;max-width:430px;box-shadow:0 8px 32px rgba(0,0,0,.28);}
+    .scan-card h3{margin:0 0 14px;font-size:1.05rem;color:#1a3c5e;}
+    .scan-preview{width:100%;max-height:200px;object-fit:contain;border-radius:8px;border:1px solid #ddd;margin-bottom:14px;display:block;}
+    .scan-field{margin-bottom:10px;}
+    .scan-field label{display:block;font-size:.72rem;font-weight:700;color:#777;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em;}
+    .scan-field input,.scan-field select{width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:.9rem;}
+    .scan-spinner{display:flex;flex-direction:column;align-items:center;gap:12px;padding:28px 0;color:#888;font-size:.9rem;}
+    .scan-spinner .spin-icon{width:36px;height:36px;border:4px solid #eee;border-top-color:#e74c3c;border-radius:50%;animation:spin .8s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .scan-actions{display:flex;gap:8px;margin-top:16px;}
+    .scan-actions button{flex:1;padding:10px;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:.9rem;}
+    .btn-confirmar{background:#e74c3c;color:#fff;}
+    .btn-confirmar:hover{background:#c0392b;}
+    .btn-cancelar{background:#eee;color:#555;}
+    .btn-cancelar:hover{background:#ddd;}
+    .api-hint{font-size:.72rem;color:#aaa;margin-top:4px;line-height:1.4;}
+    .scan-err{color:#e74c3c;font-size:.85rem;padding:10px 0;text-align:center;}
+    .btn-scan{background:#c0392b !important;color:#fff !important;}
+
     /* ─── PRINT ─── */
     @media print {
       body { background: white; padding: 10px; }
@@ -399,7 +420,7 @@
     <div class="panel-footer">Categorías: Ventas al contado, Delivery, Servicios, Otros ingresos</div>
   </div>
   <div class="panel">
-    <div class="panel-header rojo"><span>&#x2193; Gastos</span><button class="add-btn" onclick="agregarFila('gastos')">+ Agregar</button></div>
+    <div class="panel-header rojo"><span>&#x2193; Gastos</span><button class="add-btn btn-scan" onclick="abrirEscanear()">&#x1F4F7; Escanear</button><button class="add-btn" onclick="agregarFila('gastos')">+ Agregar</button></div>
     <div class="table-wrap">
       <table id="tabla-gastos">
         <thead><tr><th class="col-fecha">Fecha</th><th class="col-cat">Categoría</th><th class="col-desc">Descripción</th><th class="col-monto">Monto</th><th class="col-metodo">Método</th><th class="col-del"></th></tr></thead>
@@ -449,6 +470,13 @@
   <button class="btn btn-clear"   onclick="limpiarTodo()">&#x1F5D1; Limpiar Todo</button>
   <button class="btn btn-help"    onclick="iniciarTutorial()">&#x2753; Ayuda</button>
   <span class="autosave-msg" id="autosave-msg">&#x2713; Guardado automáticamente</span>
+</div>
+<input type="file" id="scan-input" accept="image/*" capture="environment" style="display:none" onchange="procesarFactura(this.files[0])">
+<div id="scan-overlay" class="scan-overlay" style="display:none" onclick="cerrarScan()">
+  <div class="scan-card" onclick="event.stopPropagation()">
+    <h3 id="scan-title">Escanear Factura</h3>
+    <div id="scan-body"></div>
+  </div>
 </div>
 <div class="tut-overlay" id="tut-overlay" onclick="cerrarTutorial()"></div>
 <div class="tut-card" id="tut-card" onclick="event.stopPropagation()">
@@ -561,6 +589,145 @@
   window.addEventListener('appinstalled',()=>{document.getElementById('btn-install').style.display='none';_installPrompt=null;});
   async function instalarApp(){if(!_installPrompt)return;_installPrompt.prompt();const{outcome}=await _installPrompt.userChoice;if(outcome==='accepted'){document.getElementById('btn-install').style.display='none';_installPrompt=null;}}
   if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(()=>{});}
+
+  /* ── ESCANEO DE FACTURAS con Claude Vision ── */
+  function abrirEscanear(){
+    const key=localStorage.getItem('anthropic-key');
+    if(!key){mostrarConfigAPI();return;}
+    document.getElementById('scan-input').value='';
+    document.getElementById('scan-input').click();
+  }
+  function cerrarScan(){document.getElementById('scan-overlay').style.display='none';}
+
+  function mostrarConfigAPI(){
+    const key=localStorage.getItem('anthropic-key')||'';
+    document.getElementById('scan-title').textContent='Configurar API Key';
+    document.getElementById('scan-body').innerHTML=`
+      <p style="font-size:.85rem;color:#555;margin-bottom:14px">Para escanear facturas necesitas una API Key de Anthropic (Claude).</p>
+      <div class="scan-field">
+        <label>API Key</label>
+        <input type="password" id="input-apikey" placeholder="sk-ant-..." value="${key}" autocomplete="off">
+        <p class="api-hint">Obtenla gratis en console.anthropic.com → API Keys. Se guarda solo en tu dispositivo.</p>
+      </div>
+      <div class="scan-actions">
+        <button class="btn-cancelar" onclick="cerrarScan()">Cancelar</button>
+        <button class="btn-confirmar" onclick="guardarApiKey()">Guardar y continuar</button>
+      </div>`;
+    document.getElementById('scan-overlay').style.display='flex';
+  }
+
+  function guardarApiKey(){
+    const v=document.getElementById('input-apikey').value.trim();
+    if(!v){alert('Ingresa una API Key válida');return;}
+    localStorage.setItem('anthropic-key',v);
+    cerrarScan();
+    setTimeout(()=>{document.getElementById('scan-input').value='';document.getElementById('scan-input').click();},100);
+  }
+
+  async function procesarFactura(file){
+    if(!file)return;
+    const key=localStorage.getItem('anthropic-key');
+    if(!key){mostrarConfigAPI();return;}
+
+    // Mostrar spinner
+    document.getElementById('scan-title').textContent='Analizando factura...';
+    document.getElementById('scan-body').innerHTML='<div class="scan-spinner"><div class="spin-icon"></div><span>Claude está leyendo la factura...</span></div>';
+    document.getElementById('scan-overlay').style.display='flex';
+
+    // Leer imagen como base64
+    const reader=new FileReader();
+    reader.onload=async(e)=>{
+      const dataUrl=e.target.result;
+      const base64=dataUrl.split(',')[1];
+      const mime=file.type||'image/jpeg';
+      try{
+        const data=await callClaudeVision(key,base64,mime);
+        mostrarResultadoScan(dataUrl,data);
+      }catch(err){
+        document.getElementById('scan-title').textContent='Error';
+        document.getElementById('scan-body').innerHTML=`
+          <p class="scan-err">${err.message||'No se pudo analizar la imagen.'}</p>
+          <div class="scan-actions">
+            <button class="btn-cancelar" onclick="cerrarScan()">Cerrar</button>
+            <button class="btn-confirmar" onclick="mostrarConfigAPI()">Cambiar API Key</button>
+          </div>`;
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function callClaudeVision(apiKey,base64,mimeType){
+    const cats=CATS_GASTOS.join(', ');
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'x-api-key':apiKey,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true',
+        'content-type':'application/json'
+      },
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:300,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:mimeType,data:base64}},
+          {type:'text',text:`Analiza esta factura/boleta y extrae los datos. Responde SOLO con JSON válido, sin texto adicional:
+{"fecha":"YYYY-MM-DD","proveedor":"nombre del proveedor o tienda","descripcion":"descripción breve del gasto","monto":123.45,"categoria":"una de: ${cats}"}
+Si no puedes leer algún dato usa null. El monto debe ser número sin símbolo de moneda.`}
+        ]}]
+      })
+    });
+    if(!resp.ok){
+      const err=await resp.json().catch(()=>({}));
+      if(resp.status===401)throw new Error('API Key inválida. Revisa tu clave.');
+      throw new Error(err.error?.message||`Error ${resp.status}`);
+    }
+    const json=await resp.json();
+    const text=json.content?.[0]?.text||'{}';
+    try{return JSON.parse(text);}
+    catch{const m=text.match(/\{[\s\S]*\}/);return m?JSON.parse(m[0]):{};}
+  }
+
+  function mostrarResultadoScan(dataUrl,data){
+    const catsOpts=CATS_GASTOS.map(c=>`<option${data.categoria===c?' selected':''}>${c}</option>`).join('');
+    const fechaVal=data.fecha||hoy;
+    document.getElementById('scan-title').textContent='Confirmar datos';
+    document.getElementById('scan-body').innerHTML=`
+      <img src="${dataUrl}" class="scan-preview" alt="Factura">
+      <div class="scan-field"><label>Proveedor / Descripción</label>
+        <input type="text" id="sc-desc" value="${(data.proveedor?data.proveedor+' – ':'')}${data.descripcion||''}"></div>
+      <div class="scan-field"><label>Categoría</label>
+        <select id="sc-cat">${catsOpts}</select></div>
+      <div class="scan-field"><label>Monto</label>
+        <input type="number" id="sc-monto" min="0" step="0.01" value="${data.monto||''}"></div>
+      <div class="scan-field"><label>Fecha</label>
+        <input type="date" id="sc-fecha" value="${fechaVal}"></div>
+      <div class="scan-actions">
+        <button class="btn-cancelar" onclick="cerrarScan()">Cancelar</button>
+        <button class="btn-confirmar" onclick="confirmarGastoEscaneado()">&#x2713; Agregar a Gastos</button>
+      </div>`;
+  }
+
+  function confirmarGastoEscaneado(){
+    const desc=document.getElementById('sc-desc').value.trim();
+    const cat=document.getElementById('sc-cat').value;
+    const monto=document.getElementById('sc-monto').value;
+    const fecha=document.getElementById('sc-fecha').value;
+    const id=Date.now();
+    const catsOpts=CATS_GASTOS.map(c=>`<option${cat===c?' selected':''}>${c}</option>`).join('');
+    const metodosOpts=METODOS.map(m=>`<option>${m}</option>`).join('');
+    const html=`<tr id="fila-${id}">
+      <td><input type="date" value="${fecha}" onchange="recalcular()"></td>
+      <td><select onchange="recalcular()">${catsOpts}</select></td>
+      <td><input type="text" value="${desc}" placeholder="Descripción"></td>
+      <td><input type="number" class="monto" min="0" step="0.01" value="${monto||''}" oninput="recalcular()"></td>
+      <td class="col-metodo"><select>${metodosOpts}</select></td>
+      <td><button class="del-btn" onclick="eliminarFila('fila-${id}')">&#x2715;</button></td>
+    </tr>`;
+    document.getElementById('body-gastos').insertAdjacentHTML('beforeend',html);
+    recalcular();autoGuardar();
+    cerrarScan();
+  }
   const TUT_STEPS=[
     {title:'¡Bienvenido! 👋',text:'Te guiaré paso a paso para controlar las finanzas de tu negocio. Toca <b>Siguiente</b> para comenzar.',sel:null},
     {title:'1. Configura tu negocio',text:'Ingresa el <b>nombre</b> de tu negocio, el <b>tipo</b> (bodega, tienda…), el <b>mes</b> que quieres controlar y la <b>moneda</b> que usas.',sel:'.header-info'},
