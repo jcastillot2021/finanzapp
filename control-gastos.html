@@ -376,7 +376,12 @@
       #body-ingresos td:nth-child(5),
       #body-gastos   td:nth-child(5) { display: table-cell !important; }
     }
+  /* ─── AUTH BUTTON ─── */
+  .btn-auth{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.5);border-radius:6px;color:white;cursor:pointer;font-size:0.78rem;padding:5px 12px;white-space:nowrap;}
+  .btn-auth:hover{background:rgba(255,255,255,0.35);}
+  .auth-user-email{font-size:0.72rem;opacity:0.85;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 <div class="header">
@@ -475,6 +480,28 @@
   <button class="btn btn-help"    onclick="iniciarTutorial()">&#x2753; Ayuda</button>
   <span class="autosave-msg" id="autosave-msg">&#x2713; Guardado automáticamente</span>
 </div>
+<!-- AUTH MODAL -->
+<div id="auth-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:3000;align-items:center;justify-content:center;" onclick="cerrarAuthModal()">
+  <div style="background:#fff;border-radius:16px;padding:28px 24px;width:92%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.28);" onclick="event.stopPropagation()">
+    <h3 style="margin:0 0 16px;font-size:1rem;color:#1a3c5e;">☁️ Sincronización en la nube</h3>
+    <div style="display:flex;margin-bottom:18px;border:1px solid #ddd;border-radius:8px;overflow:hidden;">
+      <button id="tab-login" onclick="switchAuthTab('login')" style="flex:1;padding:9px;border:none;background:#2980b9;color:#fff;font-weight:600;cursor:pointer;font-size:.85rem;">Iniciar sesión</button>
+      <button id="tab-register" onclick="switchAuthTab('register')" style="flex:1;padding:9px;border:none;background:#eee;color:#555;font-weight:600;cursor:pointer;font-size:.85rem;">Crear cuenta</button>
+    </div>
+    <div id="auth-login-form">
+      <div style="margin-bottom:10px"><label style="font-size:.72rem;font-weight:700;color:#777;text-transform:uppercase;display:block;margin-bottom:3px">Email</label><input id="login-email" type="email" placeholder="tu@email.com" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:.9rem;box-sizing:border-box"></div>
+      <div style="margin-bottom:16px"><label style="font-size:.72rem;font-weight:700;color:#777;text-transform:uppercase;display:block;margin-bottom:3px">Contraseña</label><input id="login-pass" type="password" placeholder="••••••" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:.9rem;box-sizing:border-box" onkeydown="if(event.key==='Enter')iniciarSesion()"></div>
+      <button onclick="iniciarSesion()" style="width:100%;padding:10px;background:#2980b9;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:.9rem;">Entrar</button>
+    </div>
+    <div id="auth-register-form" style="display:none">
+      <div style="margin-bottom:10px"><label style="font-size:.72rem;font-weight:700;color:#777;text-transform:uppercase;display:block;margin-bottom:3px">Email</label><input id="reg-email" type="email" placeholder="tu@email.com" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:.9rem;box-sizing:border-box"></div>
+      <div style="margin-bottom:16px"><label style="font-size:.72rem;font-weight:700;color:#777;text-transform:uppercase;display:block;margin-bottom:3px">Contraseña (mín. 6 caracteres)</label><input id="reg-pass" type="password" placeholder="••••••" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:.9rem;box-sizing:border-box" onkeydown="if(event.key==='Enter')registrarse()"></div>
+      <button onclick="registrarse()" style="width:100%;padding:10px;background:#27ae60;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:.9rem;">Crear cuenta</button>
+    </div>
+    <p id="auth-error" style="font-size:.82rem;margin-top:10px;text-align:center;min-height:18px"></p>
+    <button onclick="cerrarAuthModal()" style="width:100%;padding:8px;margin-top:4px;background:#eee;color:#555;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:.85rem;">Cancelar</button>
+  </div>
+</div>
 <input type="file" id="scan-input" accept="image/*" capture="environment" style="display:none" onchange="procesarFactura(this.files[0])">
 <div id="scan-overlay" class="scan-overlay" style="display:none" onclick="cerrarScan()">
   <div class="scan-card" onclick="event.stopPropagation()">
@@ -557,21 +584,26 @@
     const rec=(bodyId,tipo)=>{const f=[];document.querySelectorAll(`#${bodyId} tr`).forEach(r=>{f.push({tipo,inputs:[...r.querySelectorAll('input')].map(i=>i.value),selects:[...r.querySelectorAll('select')].map(s=>s.value)});});return f;};
     return{negocio:document.getElementById('nombre-negocio').value,tipo:document.getElementById('tipo-negocio').value,periodo:document.getElementById('periodo').value,moneda:document.getElementById('moneda').value,notas:document.getElementById('notas').value,ingresos:rec('body-ingresos','ingresos'),gastos:rec('body-gastos','gastos'),cobrar:rec('body-cobrar','cobrar'),pagar:rec('body-pagar','pagar')};
   }
-  function guardarLocal(){localStorage.setItem('cgi-data',JSON.stringify(recopilarDatos()));alert('Datos guardados en el navegador.');}
+  function guardarLocal(){
+    localStorage.setItem('cgi-data',JSON.stringify(recopilarDatos()));
+    guardarEnNube();
+    alert('Datos guardados.');
+  }
+  function aplicarDatos(d){
+    document.getElementById('nombre-negocio').value=d.negocio||'';
+    document.getElementById('tipo-negocio').value=d.tipo||'Bodega';
+    document.getElementById('periodo').value=d.periodo||'';
+    document.getElementById('moneda').value=d.moneda||'S/. ';
+    document.getElementById('notas').value=d.notas||'';
+    actualizarTipo();
+    const restaurar=(filas,bodyId,tipo)=>{filas.forEach(f=>{agregarFila(tipo);const row=document.querySelector(`#${bodyId} tr:last-child`);const ins=row.querySelectorAll('input'),sels=row.querySelectorAll('select');f.inputs.forEach((v,i)=>{if(ins[i])ins[i].value=v;});f.selects.forEach((v,i)=>{if(sels[i])sels[i].value=v;});});};
+    ['body-ingresos','body-gastos','body-cobrar','body-pagar'].forEach(id=>{document.getElementById(id).innerHTML='';});
+    restaurar(d.ingresos||[],'body-ingresos','ingresos');restaurar(d.gastos||[],'body-gastos','gastos');restaurar(d.cobrar||[],'body-cobrar','cobrar');restaurar(d.pagar||[],'body-pagar','pagar');
+    recalcular();
+  }
   function cargarLocal(){
     const raw=localStorage.getItem('cgi-data');if(!raw)return false;
-    try{const d=JSON.parse(raw);
-      document.getElementById('nombre-negocio').value=d.negocio||'';
-      document.getElementById('tipo-negocio').value=d.tipo||'Bodega';
-      document.getElementById('periodo').value=d.periodo||'';
-      document.getElementById('moneda').value=d.moneda||'S/. ';
-      document.getElementById('notas').value=d.notas||'';
-      actualizarTipo();
-      const restaurar=(filas,bodyId,tipo)=>{filas.forEach(f=>{agregarFila(tipo);const row=document.querySelector(`#${bodyId} tr:last-child`);const ins=row.querySelectorAll('input'),sels=row.querySelectorAll('select');f.inputs.forEach((v,i)=>{if(ins[i])ins[i].value=v;});f.selects.forEach((v,i)=>{if(sels[i])sels[i].value=v;});});};
-      ['body-ingresos','body-gastos','body-cobrar','body-pagar'].forEach(id=>{document.getElementById(id).innerHTML='';});
-      restaurar(d.ingresos||[],'body-ingresos','ingresos');restaurar(d.gastos||[],'body-gastos','gastos');restaurar(d.cobrar||[],'body-cobrar','cobrar');restaurar(d.pagar||[],'body-pagar','pagar');
-      recalcular(); return true;
-    }catch(e){console.error(e); return false;}
+    try{aplicarDatos(JSON.parse(raw));return true;}catch(e){console.error(e);return false;}
   }
   function exportarCSV(){
     const d=recopilarDatos();let csv='CONTROL DE GASTOS E INGRESOS\n';
@@ -587,7 +619,7 @@
   const ejemplosGas=[['2026-03-01','Compra mercadería','Proveedor ABC','400.00','Efectivo'],['2026-03-01','Servicios básicos','Luz y agua','85.00','Efectivo'],['2026-03-02','Sueldos / Planilla','Empleado Mes','650.00','Transferencia']];
   function cargarEjemplos(){const poblar=(bodyId,tipo,datos)=>{datos.forEach(d=>{agregarFila(tipo);const row=document.querySelector(`#${bodyId} tr:last-child`),inps=row.querySelectorAll('input'),sels=row.querySelectorAll('select');inps[0].value=d[0];sels[0].value=d[1];inps[1].value=d[2];inps[2].value=d[3];sels[1].value=d[4];});};poblar('body-ingresos','ingresos',ejemplosIng);poblar('body-gastos','gastos',ejemplosGas);recalcular();}
   let _saveTimer=null;
-  function autoGuardar(){clearTimeout(_saveTimer);_saveTimer=setTimeout(()=>{localStorage.setItem('cgi-data',JSON.stringify(recopilarDatos()));const m=document.getElementById('autosave-msg');if(m){m.style.opacity='1';setTimeout(()=>{m.style.opacity='0';},2000);}},800);}
+  function autoGuardar(){clearTimeout(_saveTimer);_saveTimer=setTimeout(()=>{const datos=recopilarDatos();localStorage.setItem('cgi-data',JSON.stringify(datos));guardarEnNube();const m=document.getElementById('autosave-msg');if(m){m.style.opacity='1';setTimeout(()=>{m.style.opacity='0';},2000);}},800);}
   let _installPrompt=null;
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();_installPrompt=e;document.getElementById('btn-install').style.display='inline-block';});
   window.addEventListener('appinstalled',()=>{document.getElementById('btn-install').style.display='none';_installPrompt=null;});
@@ -760,7 +792,93 @@ Si no puedes leer algún dato usa null. El monto debe ser número sin símbolo d
     if(step.sel){const el=document.querySelector(step.sel);if(el){el.classList.add('tut-focused');_tutFocusEl=el;el.scrollIntoView({behavior:'smooth',block:'center'});}}
     else{window.scrollTo({top:0,behavior:'smooth'});}
   }
-  window.onload=()=>{if(!cargarLocal())cargarEjemplos();};
+  /* ── SUPABASE ── */
+  function abrirAuthModal(){const o=document.getElementById('auth-overlay');if(o)o.style.display='flex';}
+  function cerrarAuthModal(){const o=document.getElementById('auth-overlay');if(o)o.style.display='none';const e=document.getElementById('auth-error');if(e)e.textContent='';}
+  const _SB_URL='https://mcgatnjwroqldregdcwy.supabase.co';
+  const _SB_KEY='sb_publishable_77THR9_xDm_m_puJz6kK2w_quVM6gXD';
+  let _sb;
+  try{_sb=supabase.createClient(_SB_URL,_SB_KEY);}catch(e){console.error('Supabase init error:',e);}
+  let _sbUser=null;
+
+  if(_sb)_sb.auth.onAuthStateChange(async(event,session)=>{
+    _sbUser=session?.user??null;
+    _actualizarUIAuth();
+    if(_sbUser&&(event==='SIGNED_IN'||event==='INITIAL_SESSION')){
+      await cargarDesdeNube();
+    }
+  });
+
+  function _actualizarUIAuth(){
+    const btn=document.getElementById('btn-auth');
+    const email=document.getElementById('auth-user-email');
+    if(_sbUser){
+      btn.textContent='🔓 Cerrar sesión';btn.onclick=cerrarSesion;
+      email.textContent=_sbUser.email;email.style.display='inline';
+    }else{
+      btn.textContent='☁️ Sincronizar';btn.onclick=abrirAuthModal;
+      email.style.display='none';
+    }
+  }
+
+  async function cerrarSesion(){if(_sb)await _sb.auth.signOut();_sbUser=null;_actualizarUIAuth();}
+
+  function switchAuthTab(tab){
+    document.getElementById('tab-login').style.cssText='flex:1;padding:9px;border:none;cursor:pointer;font-weight:600;font-size:.85rem;'+(tab==='login'?'background:#2980b9;color:#fff':'background:#eee;color:#555');
+    document.getElementById('tab-register').style.cssText='flex:1;padding:9px;border:none;cursor:pointer;font-weight:600;font-size:.85rem;'+(tab==='register'?'background:#27ae60;color:#fff':'background:#eee;color:#555');
+    document.getElementById('auth-login-form').style.display=tab==='login'?'block':'none';
+    document.getElementById('auth-register-form').style.display=tab==='register'?'block':'none';
+    document.getElementById('auth-error').textContent='';
+  }
+
+  async function iniciarSesion(){
+    const email=document.getElementById('login-email').value.trim();
+    const pass=document.getElementById('login-pass').value;
+    const errEl=document.getElementById('auth-error');
+    if(!email||!pass){errEl.style.color='#e74c3c';errEl.textContent='Completa email y contraseña.';return;}
+    const{error}=await _sb.auth.signInWithPassword({email,password:pass});
+    if(error){errEl.style.color='#e74c3c';errEl.textContent=error.message;return;}
+    cerrarAuthModal();
+  }
+
+  async function registrarse(){
+    const email=document.getElementById('reg-email').value.trim();
+    const pass=document.getElementById('reg-pass').value;
+    const errEl=document.getElementById('auth-error');
+    if(!email||!pass){errEl.style.color='#e74c3c';errEl.textContent='Completa email y contraseña.';return;}
+    if(pass.length<6){errEl.style.color='#e74c3c';errEl.textContent='La contraseña debe tener al menos 6 caracteres.';return;}
+    const{error}=await _sb.auth.signUp({email,password:pass});
+    if(error){errEl.style.color='#e74c3c';errEl.textContent=error.message;return;}
+    errEl.style.color='#27ae60';errEl.textContent='¡Cuenta creada! Revisa tu email para confirmar.';
+  }
+
+  async function guardarEnNube(){
+    if(!_sbUser)return;
+    const datos=recopilarDatos();
+    const periodo=datos.periodo||'sin-periodo';
+    await _sb.from('periodos').upsert({user_id:_sbUser.id,periodo,datos,updated_at:new Date().toISOString()},{onConflict:'user_id,periodo'});
+  }
+
+  async function cargarDesdeNube(){
+    if(!_sbUser)return false;
+    const periodo=document.getElementById('periodo').value;
+    let q=_sb.from('periodos').select('datos').eq('user_id',_sbUser.id);
+    if(periodo)q=q.eq('periodo',periodo);
+    else q=q.order('updated_at',{ascending:false}).limit(1);
+    const{data,error}=await q.maybeSingle();
+    if(error||!data)return false;
+    aplicarDatos(data.datos);
+    localStorage.setItem('cgi-data',JSON.stringify(data.datos));
+    return true;
+  }
+
+  window.onload=async()=>{
+    const{data:{session}}=await _sb.auth.getSession();
+    _sbUser=session?.user??null;
+    _actualizarUIAuth();
+    if(_sbUser){const ok=await cargarDesdeNube();if(!ok&&!cargarLocal())cargarEjemplos();}
+    else{if(!cargarLocal())cargarEjemplos();}
+  };
 </script>
 </body>
 </html>
