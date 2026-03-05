@@ -30,7 +30,9 @@ const App = {
 
     this._applyTheme(this.state.settings.theme);
 
-    PIN.init(!!this.state.settings.pin, () => this._start());
+    Auth.init(() => {
+      PIN.init(!!this.state.settings.pin, () => this._start());
+    });
   },
 
   _start() {
@@ -650,6 +652,12 @@ const App = {
       }
       e.target.value = '';
     });
+
+    const user = Auth.getUser();
+    if (user) {
+      document.getElementById('auth-user-email').textContent = user.email || user.user_metadata?.user_name || '—';
+    }
+    document.getElementById('logout-btn').addEventListener('click', () => Auth.signOut());
 
     document.getElementById('clear-data-btn').addEventListener('click', () => {
       if (!confirm('¿Eliminar TODOS los datos? Esta acción no se puede deshacer.')) return;
